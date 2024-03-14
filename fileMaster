@@ -1,0 +1,67 @@
+#!/bin/bash
+
+# Function to display help message
+display_help() {
+    echo "Usage: $0 [OPTIONS] <file_path>"
+    echo "OPTIONS:"
+    echo "  -h, --help       Display this help message"
+    echo "About:"
+    echo "  This script helps to document files in the system. It takes as input a path to a file"
+    echo "  and creates a JSON file in the same folder with the file documentation."
+    echo "  For more information, please visit: https://github.com/your_username/your_repo"
+    echo "  Written by: Toozig"
+    exit 0
+}
+
+# Parse command-line options
+while getopts ":h-:" opt; do
+    case $opt in
+        -)
+            case "${OPTARG}" in
+                help)
+                    display_help
+                    ;;
+                *)
+                    echo "Invalid option: --${OPTARG}" >&2
+                    exit 1
+                    ;;
+            esac
+            ;;
+        h)
+            display_help
+            ;;
+        *)
+            echo "Invalid option: -$OPTARG" >&2
+            exit 1
+            ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+# Check if the user requested help
+if [ "$#" -eq 0 ]; then
+    display_help
+fi
+
+# Check if a file path is provided as an argument
+file_path="$1"
+if [ ! -f "$file_path" ]; then
+    echo "Error: File not found at $file_path"
+    exit 1
+fi
+
+# Get the absolute path of the directory containing the file
+dir_path=$(dirname "$(realpath "$file_path")")
+
+# Define the Docker image name
+docker_image="file_master"
+
+# Check if the Docker image exists
+if ! docker image inspect "$docker_image" &> /dev/null; then
+    # Build the Docker image if it doesn't exist
+    docker build -t "$docker_image" fileMaster_bin/
+fi
+
+# Run the Docker container with the file's directory as a volume
+# Set the working directory inside the container and pass the relative file path
+docker run -v "$dir_path:/files" -p 4000:80 -it "$docker_image" python main.py "/files/$(basename "$file_path")"
