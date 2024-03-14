@@ -8,7 +8,7 @@ display_help() {
     echo "About:"
     echo "  This script helps to document files in the system. It takes as input a path to a file"
     echo "  and creates a JSON file in the same folder with the file documentation."
-    echo "  For more information, please visit: https://github.com/your_username/your_repo"
+    echo "  For more information, please visit: https://github.com/Toozig/fileMaster"
     echo "  Written by: Toozig"
     exit 0
 }
