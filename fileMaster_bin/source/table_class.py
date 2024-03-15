@@ -134,7 +134,31 @@ class TableFile(File):
             self.table_data = TableFileData(**table_data)
             # print("created table successfully")
 
+    def get_columns(self):
+        """
+        Returns the columns_description of the table file.
 
+        Returns:
+            List[dict[str,str]]: List of dictionaries specifying column details.
+        """
+        return self.table_data.columns_description
+    
+    def get_column(self, column_name: str) -> dict:
+        """
+        Returns the details of a specific column.
+
+        Args:
+            column_name (str): The name of the column.
+
+        Returns:
+            dict[str,str]: Dictionary specifying column details.
+        """
+        for col in self.get_columns():
+            if col['name'] == column_name:
+                return col
+        return None
+    
+    
     def open_file(self) -> pd.DataFrame:
         """
         Opens the table file and returns a pandas DataFrame with specified parameters.

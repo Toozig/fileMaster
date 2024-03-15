@@ -4,11 +4,49 @@ from pydantic import BaseModel
 from typing import Optional
 
 
+DEFAULT_COLUMNS = [
+    {
+        "name": "id_probe",
+        "index": None,
+        "dtype": "str",
+        "description": "The probe id.",
+    },
+    {
+        "name": "pbm_sequence",
+        "index": None,
+        "dtype": "str",
+        "description": "The sequence of the probe.",
+        "check_type": True
+    },
+    {
+        "name": "linker_sequence",
+        "index": None,
+        "dtype": "str",
+        "description": "The linker sequence.",
+        "check_type": False
+    },
+    {
+        "name": "mean_signal_intensity",
+        "index": None,
+        "dtype": "float",
+        "description": "PBM signal intensity result.",
+        "check_type": False
+    },
+    {
+        "name": "mean_background_intensity",
+        "index": None,
+        "dtype": "float",
+        "description": "PBM background intensity result.",
+        "check_type": False
+    }
+]
+
 class PBMData(BaseModel):
 		sequence_col: Optional[str] = None
 		target_col: Optional[str] = None
 		seq_lenth: Optional[int] = None
 		dropped_samples: Optional[dict] = None
+		ArrayDesign: Optional[str] = None
 
 class PBMFile(TableFile):
 	"""
@@ -20,10 +58,9 @@ class PBMFile(TableFile):
 
 
 
-	def __init__(self, 
-					target_col = None,
+	def __init__(self,
+			  		ArrayDesign = None,
 					seq_lenth = None,
-					sequence_col = None,
 					dropped_samples = None ,**kwargs):
 		# Extract and remove sequence_col and target_col from kwargs
 		# print("=======PBM======")
@@ -34,11 +71,10 @@ class PBMFile(TableFile):
 		if 'PBM_data' in kwargs:
 			self.PBM_data = PBMData(**kwargs['PBM_data'])
 		else:
-			PBM_data = {'target_col': target_col, 'seq_lenth': seq_lenth,
-			    'dropped_samples': dropped_samples, 'sequence_col': sequence_col}
+			PBM_data = {'target_col': 'mean_signal_intensity', 'seq_lenth': seq_lenth,
+			    'dropped_samples': dropped_samples, 'sequence_col': 'pbm_sequence'}
 			self.PBM_data = PBMData(**PBM_data)
 
-			self.set_target_cols(self.PBM_data.sequence_col, self.PBM_data.target_col)
 
 
 	def get_sequence_col_name(self):
@@ -47,26 +83,6 @@ class PBMFile(TableFile):
 	def get_target_col_name(self):
 		return self.PBM_data.target_col
 
-	def set_target_cols(self, sequence_col, target_col):
-		"""
-		Description:
-			Sets the target and sequence columns
-		"""
-		if sequence_col is None or target_col is None:
-			df= self.open_file().head()
-			print(df.to_string())
-			for i, col in enumerate(df.columns):
-				print(i, col)
-	
-		# If the sequence_col is not set, get the sequence column
-		if sequence_col is None:
-			seq_idx  = int(input("Enter the sequence column: "))
-			sequence_col = df.columns[seq_idx]
-			self.PBM_data.sequence_col = sequence_col
-		if target_col is None:
-			target_idx = int(input("Enter the target column: "))
-			target_col = df.columns[target_idx]
-			self.PBM_data.target_col = target_col
 
 
 

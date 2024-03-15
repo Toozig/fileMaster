@@ -89,7 +89,7 @@ if __name__ == "__main__":
     try:
         
         # Get file path from the user
-        file_path = input("Enter the file path to check (Ctrl+C to exit): \n")
+        file_path = sys.argv[1]
 
         # Check and print the status
         while check_and_print_file(file_path):
