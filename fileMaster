@@ -13,6 +13,21 @@ display_help() {
     exit 0
 }
 
+# Function to check for updates in git repository
+check_git_updates() {
+    git fetch origin
+    LOCAL=$(git rev-parse HEAD)
+    REMOTE=$(git rev-parse @{u})
+    if [ $LOCAL != $REMOTE ]; then
+        echo "Git repository has updates. Pulling changes..."
+        git pull origin master
+        return 0
+    else
+        echo "Git repository is up to date."
+        return 1
+    fi
+}
+
 # Parse command-line options
 while getopts ":h-:" opt; do
     case $opt in
@@ -59,6 +74,12 @@ docker_image="file_master"
 # Check if the Docker image exists
 if ! docker image inspect "$docker_image" &> /dev/null; then
     # Build the Docker image if it doesn't exist
+    docker build -t "$docker_image" fileMaster_bin/
+fi
+
+# Check for updates in git repository
+if check_git_updates; then
+    # Rebuild Docker image if updates were found
     docker build -t "$docker_image" fileMaster_bin/
 fi
 
