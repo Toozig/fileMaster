@@ -71,17 +71,9 @@ dir_path=$(dirname "$(realpath "$file_path")")
 # Define the Docker image name
 docker_image="file_master"
 
-# Check if the Docker image exists
-if ! docker image inspect "$docker_image" &> /dev/null; then
-    # Build the Docker image if it doesn't exist
-    docker build -t "$docker_image" fileMaster_bin/
-fi
+# This command will build the Docker image if it doesn’t exist or if there are updates in the git repository
+(docker image inspect "$docker_image" &> /dev/null || check_git_updates) && docker build -t "$docker_image" fileMaster_bin/
 
-# Check for updates in git repository
-if check_git_updates; then
-    # Rebuild Docker image if updates were found
-    docker build -t "$docker_image" fileMaster_bin/
-fi
 
 # Run the Docker container with the file's directory as a volume
 # Set the working directory inside the container and pass the relative file path

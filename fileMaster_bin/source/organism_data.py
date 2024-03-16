@@ -13,6 +13,12 @@ ORGANISM_DICT = {
     "mm10": MM10_ORGANISM
 }
 
+
+def get_organism_data(genome: str) -> dict:
+    if organism in ORGANISM_DICT:
+        return ORGANISM_DICT[organism]
+    raise ValueError(f"Organism {organism} not found in the organism dictionary.")
+
 class Organism(BaseModel):
     organism: str
     genome_version: str
