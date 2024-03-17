@@ -15,9 +15,9 @@ ORGANISM_DICT = {
 
 
 def get_organism_data(genome: str) -> dict:
-    if organism in ORGANISM_DICT:
-        return ORGANISM_DICT[organism]
-    raise ValueError(f"Organism {organism} not found in the organism dictionary.")
+    if genome in ORGANISM_DICT:
+        return ORGANISM_DICT[genome]
+    raise ValueError(f"Organism {genome} not found in the organism dictionary.")
 
 class Organism(BaseModel):
     organism: str

@@ -9,6 +9,9 @@ from source.bed_class import BedFile, DEFAULT_COLUMNS as BED_DEFAULT_COLUMNS
 from source.organism_data import ORGANISM_DICT
 from time import sleep
 
+import inspect
+
+
 FILE_PATH_IDX = 1
 SOURCE = 'source'
 PATH = 'path'
@@ -26,6 +29,10 @@ FILE_TYPE_DICT= {
  give the full functionality of the file package. Don\'t be lazy 😤.',
 }
 
+OBJECT_DICT = {'table': TableFile,
+               'bed': BedFile,
+               'pbm': PBMFile,
+               'source': Source}
 
 
 DEBUG = True
@@ -42,6 +49,7 @@ def write_ascii(string, font='tarty1'):
 def print_ascii_art():
     # ASCII art for cool header
     ascii_art = """
+
 oooooooooooo  o8o  oooo            ooo        ooooo                        .                                oooooooooo.   ooooooooo   .oooo.     .oooo.        
 `888'     `8  `"'  `888            `88.       .888'                      .o8                                `888'   `Y8b d\"\"\"\"\"\"\"8' .dP""Y88b  .dP""Y88b       
  888         oooo   888   .ooooo.   888b     d'888   .oooo.    .oooo.o .o888oo  .ooooo.  oooo d8b            888     888       .8'        ]8P'       ]8P'      
@@ -65,6 +73,21 @@ def welcome_message():
     print("Hold tight, and let's get ready for some organized chaos! 🚀📂")
 
 
+def get_required_params(class_obj):
+    sig = inspect.signature(class_obj.__init__)
+    params = sig.parameters
+    required_params = [name for name, param in params.items() if param.default == param.empty and name != 'self']
+    return required_params
+
+
+def get_class_data(file_type, class_data= {}):
+    write_ascii(f'{file_type}-data')
+    class_obj = OBJECT_DICT[file_type]
+    required_params = get_required_params(class_obj)
+    required_params = [param for param in required_params if param not in list(class_data.keys()) + ['kwargs']]
+    for param in required_params:
+        class_data[param] = input(f"Enter the {param.replace('_', ' ')}: ")
+    return class_data
 
 
 
@@ -86,11 +109,11 @@ def __create_source(path=None, type=None,  name=None):
 
 
 
-def get_file_data(path, file_type='source', sources = [], description = None):
+def get_file_data(path, file_type='source', sources = [], description = None, ask_more_source = True):
     file_description = input("Enter description of the file: ") if description is None else description
     print("\n===============\n\n")
     write_ascii(SOURCE)
-    more_source =  len(sources) == 0 or input("Do you want to add a source? (y/n): ").lower() == 'y'
+    more_source = ask_more_source and  (len(sources) == 0 or input("Do you want to add a source? (y/n): ").lower() == 'y')
     while more_source:
         sources.append(__create_source())
         more_source = input("Do you want to add another source? (y/n): ").lower() == 'y'
@@ -234,7 +257,7 @@ def __get_table_data(path: str,
                     have_header: bool = None,
                     index_col: bool = None,
                     comment: str = None,
-                    default_columns = []):
+                    default_columns = [], ):
         print("\n===============\n")
         write_ascii('table')
         print("\n===============\n")
@@ -269,12 +292,13 @@ def get_table_data(path: str,
                     comment: str = None,
                     default_columns = [],
                     sources = [],
-                    description = None):
+                    description = None,
+                    **kwargs):
         """
         create json file for a given table file
         """
-        file_data = get_file_data(path, file_type=file_type, sources=sources, description=description)
-        table_data = __get_table_data(path, have_header, index_col, comment, default_columns)
+        file_data = get_file_data(path, file_type=file_type, sources=sources, description=description, **kwargs)
+        table_data = __get_table_data(path, have_header, index_col, comment, default_columns )
         table_data.update(file_data)
         return   table_data
 
@@ -330,37 +354,15 @@ def get_bed_data(path: str, file_type: str = "bed", to_save: bool = False):
 #### end of bed file functions
 ### PBM file functions
 
-def __get_sequence_length(table_data):
-    table = TableFile(**table_data)
-    df = table.open_file()
-    seq_len = len(df['pbm_sequence'].iloc[0])
-    return seq_len
-
-
-def __get_array_design():
-    array_design = ''
-    while array_design not in ['ME', 'HK']:
-        array_design = input("Enter the array design (ME/HK): ").upper()
-        if array_design not in ['ME', 'HK']:
-            print("Oh honey, that's not on the list. Choose a valid array design.")
-    return array_design
-
-
-def __create_PBM_source():
-    source_id = input("Enter the source id (e.g PMID, GEO ID): ")
-    source_path = input("BONUS Enter the source path (link to paper / site.): ")
-    pbm_source = __create_source(path=source_path, type='paper', name=source_id)
-    return pbm_source
 
 def get_pbm_data(path: str, file_type: str = "pbm", to_save: bool = False):
-    array_design = __get_array_design()
-    pbm_source = __create_PBM_source()
+    pbm_data = get_class_data(file_type=file_type)
+    pbm_source = __create_source(path='', type='paper', name=pbm_data['cite_source'])
     description = f"PMB expirment.\nsource: {pbm_source[NAME]}"
     table_data = get_table_data(path, file_type, to_save,
                                  default_columns = PBM_DEFAULT_COLUMNS, sources=[pbm_source],
-                                 description=description)
-    seq_len = __get_sequence_length(table_data)
-    table_data.update({'seq_len': seq_len, 'ArrayDesign': array_design})
+                                 description=description, ask_more_source=False)
+    table_data.update(pbm_data)
     return table_data
 
 
@@ -384,10 +386,6 @@ DATA_GETTER_DICT = {'table': get_table_data,
                     'pbm': get_pbm_data,
                     'source': get_file_data}
 
-OBJECT_DICT = {'table': TableFile,
-               'bed': BedFile,
-               'pbm': PBMFile,
-               'source': Source}
 
 
 def ask_for_file_type():

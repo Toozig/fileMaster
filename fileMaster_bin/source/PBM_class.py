@@ -2,7 +2,7 @@
 from .table_class import TableFile
 from pydantic import BaseModel
 from typing import Optional
-
+from .deepbind_interface import DeepbindInterface, DeepBindData
 
 DEFAULT_COLUMNS = [
     {
@@ -41,14 +41,18 @@ DEFAULT_COLUMNS = [
     }
 ]
 
+
+
+
 class PBMData(BaseModel):
+		deepbind_data: DeepBindData
+		array_design: str
 		sequence_col: Optional[str] = None
 		target_col: Optional[str] = None
-		seq_lenth: Optional[int] = None
+		sequence_length: Optional[int] = None
 		dropped_samples: Optional[dict] = None
-		ArrayDesign: Optional[str] = None
 
-class PBMFile(TableFile):
+class PBMFile(TableFile, DeepbindInterface):
 	"""
 	Description:
 		DeepBind model class
@@ -59,22 +63,33 @@ class PBMFile(TableFile):
 
 
 	def __init__(self,
-			  		ArrayDesign = None,
-					seq_lenth = None,
+					protein_name,
+					array_design,
+					source_organism,
+					cite_source,
+					sequence_length = None,
 					dropped_samples = None ,**kwargs):
 		# Extract and remove sequence_col and target_col from kwargs
-		# print("=======PBM======")
-		# for k,v in kwargs.items():
-		# 	print(k,':',v)
 		super().__init__(**kwargs)
 
 		if 'PBM_data' in kwargs:
 			self.PBM_data = PBMData(**kwargs['PBM_data'])
 		else:
-			PBM_data = {'target_col': 'mean_signal_intensity', 'seq_lenth': seq_lenth,
-			    'dropped_samples': dropped_samples, 'sequence_col': 'pbm_sequence'}
+			if sequence_length is None:
+				df = self.open_file()
+				sequence_length = len(df['pbm_sequence'].iloc[0])
+			PBM_data = {'target_col': 'mean_signal_intensity', 'sequence_length': sequence_length,
+				'dropped_samples': dropped_samples,
+				'sequence_col': 'pbm_sequence', 
+				'array_design': array_design,
+				'deepbind_data': {
+									'source_organism': source_organism,
+									'protein_name': protein_name,
+									'cite_source': cite_source
+								}
+					}
+			
 			self.PBM_data = PBMData(**PBM_data)
-
 
 
 	def get_sequence_col_name(self):
@@ -82,8 +97,6 @@ class PBMFile(TableFile):
 	
 	def get_target_col_name(self):
 		return self.PBM_data.target_col
-
-
 
 
 	def get_seq_col(self):
@@ -109,6 +122,15 @@ class PBMFile(TableFile):
 			self.PBM_data.seq_lenth = int(df.apply(lambda x: len(x)).value_counts().idxmax())
 		return self.PBM_data.seq_lenth
 
+
+	def get_experiment_details(self) -> dict:
+		"""
+		Description:
+			Returns the experiment details
+		"""
+		return {'array_design' : self.PBM_data.array_design}
+	
+
 	def get_drop_samples(self):
 		"""
 		Description:
@@ -129,7 +151,12 @@ class PBMFile(TableFile):
 		data =  self.open_file().drop(index=to_drop)
 		return data
 			
-
+	def get_db_data(self) -> DeepBindData:
+		"""
+		Description:
+			Returns the deepbind data
+		"""
+		return self.PBM_data.deepbind_data
 
 	def check_samples(self):
 		"""

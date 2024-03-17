@@ -48,7 +48,8 @@ class File(ABC):
 
 
 
-
+        def get_sources(self):
+            return self.file_data.sources_list
 
         def get_path(self):
             return self.file_data.path

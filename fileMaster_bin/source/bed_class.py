@@ -2,7 +2,7 @@ import pandas as pd
 from typing import List, Dict
 from pydantic import ValidationError, BaseModel
 from .table_class import TableFile
-from .organism_data import ORGANISM_DICT, Organism
+from .organism_data import  Organism
 BED_SEP = '\t'
 BED_COMMENT = '#'
 
@@ -91,38 +91,6 @@ class BedFile(TableFile):
                              **self.table_data.read_args.model_dump()) # todo: in table class - function that get open args
         return bed_df
     
-
-
-
-    @classmethod
-    def __get_columns_description(cls,path, sep=BED_SEP):
-        columns_description = []
-        print("Enter the details of non 'chrom', 'start' 'end':")
-        with open(path, 'r') as file:
-            header = file.readline().strip().split(sep)[3:]
-        for i, col in enumerate(header):
-            columns_description.append(super().__get_columns_helper(i, col))
-        return columns_description
-    
-
-    @classmethod
-    def create_documantation(cls, path: str, file_type: str = "bed", to_save: bool = True):
-        """
-        Creates a documentation for the BED file.
-
-        Args:
-            path (str): The path of the documentation file.
-            file_type (str, optional): The type of the file. Defaults to "bed".
-            to_save (bool, optional): Whether to save the documentation to a file. Defaults to True.
-        """
-        table = super().create_documantation(path, file_type=file_type, to_save=False)
-        organism = input(f"Enter the organism of the BED file: ({','.join(ORGANISM_DICT.keys())})")
-        if organism not in ORGANISM_DICT:
-            raise ValueError(f"Organism '{organism}' is not in the list of organisms.")
-        organism = ORGANISM_DICT[organism]
-        bed_file = cls(**table.file_data.dict(), **table.table_data.dict(), organism=organism)
-
-
     
     class BedFileData(BaseModel):
         """
